@@ -2,6 +2,7 @@ package com.kiennt.codeforces;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class r376c {
     public static class MyScanner {
@@ -12,15 +13,33 @@ public class r376c {
             br = new BufferedReader(new InputStreamReader(System.in));
         }
 
-        String next() {
-            while (st == null || !st.hasMoreElements()) {
-                try {
+        public boolean hasNext() {
+            if (st != null && st.hasMoreTokens())
+                return true;
+            try {
+                while (st == null || !st.hasMoreTokens())
                     st = new StringTokenizer(br.readLine());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            } catch (Exception e) {
+                return false;
             }
-            return st.nextToken();
+            return true;
+        }
+
+        public String nextLine() {
+            StringBuilder sb;
+            try {
+                while (st == null || !st.hasMoreTokens()) return br.readLine();
+                sb = new StringBuilder(st.nextToken());
+                while (st.hasMoreTokens()) sb.append(" " + st.nextToken());
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
+            return sb.toString();
+        }
+
+        public String next() {
+            if (hasNext()) return st.nextToken();
+            return null;
         }
 
         int nextInt() {
@@ -34,81 +53,70 @@ public class r376c {
         double nextDouble() {
             return Double.parseDouble(next());
         }
-
-        String nextLine(){
-            String str = "";
-            try {
-                str = br.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return str;
-        }
     }
 
-    private static int dfs(ArrayList<List<Integer>> graphs, boolean[] isVisit, int node) {
-        int size = 0;
+    public static class Solution {
+        int n, k, maxDuplicate, size;
+        boolean[] isVisit;
+        int[] socks;
+        HashMap<Integer, Integer> counter;
+        ArrayList<Integer>[] graphs;
 
-        Stack<Integer> stack = new Stack<>();
-        stack.push(node);
-
-        while (!stack.isEmpty()) {
-            node = stack.pop();
-            if (isVisit[node]) {
-                continue;
-            }
+        private void dfs(int node) {
             isVisit[node] = true;
             size++;
-            for (int nextNode: graphs.get(node)) {
-                stack.push(nextNode);
+            int newValue = counter.getOrDefault(socks[node], 0) + 1;
+            counter.put(socks[node], newValue);
+            maxDuplicate = Math.max(maxDuplicate, newValue);
+            for (int n: graphs[node]) {
+                if (!isVisit[n]) dfs(n);
             }
         }
 
-        return size;
-    }
+        public int solve() {
+            isVisit = new boolean[n + 1];
+            counter = new HashMap<>();
 
-    public static int solution(ArrayList<List<Integer>> graphs, int[] socks) {
-        boolean[] isVisit = new boolean[socks.length];
-        int sum = 0;
-
-        for (int i = 1; i < socks.length; ++i) {
-            int size = dfs(graphs, isVisit, i);
-            if (size > 0) {
-                sum += size - 1;
+            int sum = 0;
+            for (int i = 1; i <= n; ++i) {
+                if (!isVisit[i]) {
+                    counter.clear();
+                    maxDuplicate = 0;
+                    size = 0;
+                    dfs(i);
+                    sum += size - maxDuplicate;
+                }
             }
+
+            return sum;
         }
 
-        return sum;
     }
 
     public static void main(String[] args) {
         MyScanner sc = new MyScanner();
         PrintWriter pw = new PrintWriter(new BufferedOutputStream(System.out));
-        int n = sc.nextInt();
-        int m = sc.nextInt();
+        Solution s = new Solution();
 
-        // init graph
-        int k = sc.nextInt();
-        ArrayList<List<Integer>> graphs = new ArrayList<List<Integer>>(n + 1);
-        for (int i = 0; i <= n; ++i) {
-            List<Integer> list = new LinkedList<>();
-            graphs.add(i, list);
-        }
+        s.n = sc.nextInt();
+        int m = sc.nextInt();
+        s.k = sc.nextInt();
+        s.graphs = Stream.generate(ArrayList::new).limit(s.n + 1).toArray(ArrayList[]::new);
 
         // init socks
-        int[] socks = new int[n + 1];
-        for (int i = 1; i <= n; ++i)  {
-            socks[i] = sc.nextInt();
+        s.socks = new int[s.n + 1];
+        for (int i = 1; i <= s.n; ++i)  {
+            s.socks[i] = sc.nextInt();
         }
 
         // make graphs
         for (int i = 0; i < m; ++i) {
             int e1 = sc.nextInt();
             int e2 = sc.nextInt();
-            graphs.get(e1).add(e2);
-            graphs.get(e2).add(e1);
+            s.graphs[e1].add(e2);
+            s.graphs[e2].add(e1);
         }
-        pw.print(solution(graphs, socks));
+        pw.print(s.solve());
         pw.close();
     }
 }
